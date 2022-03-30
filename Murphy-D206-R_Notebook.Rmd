@@ -1,0 +1,3357 @@
+---
+title: "Data Cleaning"
+author: "Sean P. Murphy"
+date: "20 May 2021"
+output:
+  pdf_document:
+    toc: yes
+    toc_depth: 4
+---
+
+***
+
+## Part I: Research Question
+
+A.  Describe one question or decision that you will address using the
+    data set you chose. The summarized question or decision must be
+    relevant to a realistic organizational need or situation.
+
+B.  Describe the variables in the data set and indicate the specific
+    type of data being described. Use examples from the data set that
+    support your claims.
+
+***
+
+### Part I, A: Question Description
+
+We have been tasked by a popular hospital chain to determine factors
+that indicate an increased probability of patient readmission (within a
+month of discharge) in order to avoid penalties imposed by Centers for
+Medicare and Medicaid Services due to excessively high readmission
+rates.
+
+### Part I, B: Variable Descriptions
+
+We will import the data set using the **readr** package and explore each
+column individually (Larose & Larose, 2019, p. 23).
+
+```{r Import Data}
+library("readr")
+df <- read.csv('medical_raw_data.csv')
+head(df)
+```
+
+***
+
+For much of the below initial analysis, we use **typeof()** and
+**any()** functions to inspect the data (Wickham & Grolemund, 2017, pp.
+277, 298). I located the **duplicated()** function via RStudios built-in
+help topics. Because **duplicated()** returns a logical vector, we can
+use **any()** to parse whether there are any TRUE results (Wickham &
+Grolemund, 2017, p. 277). The **sum()** function (Burger, 2019) counts
+the TRUE returned values from **is.na()** in the same way as **any()**
+(Wickham & Grolemund, 2017, pp. 49, 62).
+
+#### Indices / Unique identifiers   
+
+**Unnamed Column (X):**  
+
+This column appears to be an integer index. It
+contains no entries that are null and no duplicated values.
+
+```{r Examine Unnamed Column}
+typeof(df$X)
+any(duplicated(df$X))
+sum(is.na(df$X))
+```
+
+**Case Order:**  
+
+This is an integer value assigned to allow us to refer
+back to the original order in which a row occurred in the original data
+set. It contains no entries that are null and no duplicated values.
+
+```{r Examine CaseOrder}
+typeof(df$CaseOrder)
+any(duplicated(df$CaseOrder))
+sum(is.na(df$CaseOrder))
+```
+
+**Customer_id:**  
+
+This character string uniquely identifies a patient and
+is used in place of personally identifying information (PII). It
+contains no entries that are null and no duplicated values.
+
+```{r Examine Customer_id}
+typeof(df$Customer_id)
+any(duplicated(df$Customer_id))
+sum(is.na(df$Customer_id))
+```
+
+**Interaction/UID:**  
+
+These character strings are used to refer to
+specific patient transactions procedures and admissions. They contain no
+entries that are null and no duplicated values.
+
+```{r Examine Interaction}
+typeof(df$Interaction)
+any(duplicated(df$Interaction))
+sum(is.na(df$Interaction))
+```
+
+```{r Examine UID}
+typeof(df$UID)
+any(duplicated(df$UID))
+sum(is.na(df$UID))
+```
+
+#### Customer billing data
+
+**City/State/County/Zip:**    
+
+These all represent patient billing address
+data, which are all categorical variables. City, State, and County are
+character strings. Zip is an integer. There are no null values.
+
+```{r Examine Address Information}
+typeof(df$City)
+sum(is.na(df$City))
+typeof(df$State)
+sum(is.na(df$State))
+typeof(df$County)
+sum(is.na(df$County))
+typeof(df$Zip)
+sum(is.na(df$Zip))
+```
+
+**Lat/Lng:**  
+
+GPS coordinates of patients' residence as listed on the
+billing statement. Stored as a double precision floating point, these
+are continuous variables. There are no null values.
+
+```{r Examine Lat/Long}
+typeof(df$Lat)
+sum(is.na(df$Lat))
+typeof(df$Lng)
+sum(is.na(df$Lng))
+```
+
+***
+
+For much of the below data, we will use **hist()** instead of functions
+from the **ggplot2** package for the sake of simplicity. This function
+was located via the RStudio built-in help topics (Larose & Larose, 2019,
+p. 34).
+
+#### Census Data
+
+**Population:**  
+
+This double-precision floating-point is the population
+surrounding the patients' address (as listed on billing data) within a
+one-mile radius per census data. Population is a continuous variable.
+There are no null values, and the data has a heavy right skew.
+
+```{r Examine Population}
+
+typeof(df$Population)
+sum(is.na(df$Population))
+
+hist(df$Population)
+```
+
+
+***
+
+For variables that are not numeric, we can use **barplot()** to quickly
+visualize the data to gain some preliminary insight (Kabacoff, 2017).
+
+**Area:**  
+
+This character string indicates the type of area in which the
+patients' addresses are located (as listed on billing data) per
+unofficial census data. Area is a categorical variable with three
+categories: Suburban, Urban, and Rural. There are no null values.
+
+```{r Examine Area}
+
+typeof(df$Area)
+unique(df$Area)
+sum(is.na(df$Area))
+
+
+barplot(table(df$Area), main = "Patient Residence Area According to Census Data")
+```
+
+**Timezone:**  
+
+This character string indicates the patients' time zone
+per their sign up information. Timezone is a categorical variable with
+26 categories, and there are no null values.
+
+```{r Examine Timezone}
+
+typeof(df$Timezone)
+unique(df$Timezone)
+sum(is.na(df$Timezone))
+
+barplot(table(df$Timezone))
+```
+
+***
+
+#### Admissions Data
+
+**Job:**  
+
+This character string is the reported job of the patient (or
+primary insurance holder) per the admissions information. Job is a
+categorical variable with 639 categories, and there are no null values.
+
+```{r Examine Job}
+
+typeof(df$Job)
+unique(df$Job)
+sum(is.na(df$Job))
+
+barplot(table(df$Job))
+```
+
+**Children:**  
+
+An integer value indicating the number of children in the
+patients' households per the admissions information. Children is a
+categorical variable with 11 categories ranging from 0 to 10, and the
+data skews right. There are 2,588 null values.
+
+```{r Examine Children}
+
+typeof(df$Children)
+unique(df$Children)
+sum(is.na(df$Children))
+
+hist(df$Children)
+```
+
+**Age:**  
+
+An integer value for the age of the patient per admissions
+information. Age is a categorical variable with patients' ages ranging
+from 18-89, and the data has a fairly even distribution. There are 2,414
+null values.
+
+```{r Examine Age}
+
+typeof(df$Age)
+unique(df$Age)
+sum(is.na(df$Age))
+
+hist(df$Age)
+```
+
+**Education:**  
+
+This character string indicates the highest earned degree
+of the patients as reported in their admissions information. Education
+is a categorical variable with 12 categories, and there are no null
+values.
+
+```{r Examine Education}
+
+typeof(df$Education)
+unique(df$Education)
+sum(is.na(df$Education))
+
+barplot(table(df$Education))
+```
+
+**Employment:**  
+
+A character string indicating the employment status of
+the patient as reported in admissions information. Employment is a
+categorical variable with five variables, and there are no null values.
+
+```{r Examine Employment}
+
+typeof(df$Employment)
+unique(df$Employment)
+sum(is.na(df$Employment))
+
+barplot(table(df$Employment))
+```
+
+Measures of rank functions **min()** and **max()** are used here to
+directly acquire information that **summary()** would also give (Wickham
+& Grolemund, 2017, p. 68).
+
+**Income:**  
+
+This double-precision floating-point gives the reported
+annual income of the patient (or primary insurance holder) per time of
+admission. Income is a continuous variable that ranges from 154.08 to
+207249.1 with a right skew. The column contains 2,464 null values.
+
+```{r Examine Income}
+
+typeof(df$Income)
+min(df$Income, na.rm = TRUE)
+max(df$Income, na.rm = TRUE)
+sum(is.na(df$Income))
+
+hist(df$Income)
+```
+
+**Marital:**  
+
+A character string indicating the reported marital status
+of the patient (or primary insurance holder) according to their
+admission information. Marital is a categorical variable with five
+categories and a fairly even distribution, and there are not any null
+values.
+
+```{r Examine Marital}
+
+typeof(df$Marital)
+unique(df$Marital)
+sum(is.na(df$Marital))
+barplot(table(df$Marital))
+``` 
+
+**Gender:**  
+
+This character string indicates customers' self-identification as male, female, or whether they prefer not to answer
+(for whatever reason). Gender is a categorical variable with three categories, and there are no null values.
+
+```{r Examine Gender}
+
+typeof(df$Gender)
+unique(df$Gender)
+sum(is.na(df$Gender))
+barplot(table(df$Gender))
+```
+
+#### Response / Dependent Variable
+
+**ReAdmis:**  
+
+This character string records whether the patient was
+readmitted within a month of release. It is the variable to which we
+want to find correlating variables of groups of variables. ReAdmis is a
+categorical variable with two categories, and there are no null values.
+
+```{r Examine ReAdmis}
+typeof(df$ReAdmis)
+unique(df$ReAdmis)
+sum(is.na(df$ReAdmis))
+barplot(table(df$ReAdmis))
+```
+
+#### Treatment/Medical History Data
+
+**VitD_levels:**  
+
+A double-precision floating-point that gives the
+patients' Vitamin D levels as measured in ng/mL. Vitamin D levels
+represent a continuous variable ranging from 9.519012 to 53.01912. There
+are no null values.
+
+```{r Examine VidD_levels}
+
+typeof(df$VitD_levels)
+min(df$VitD_levels, na.rm = TRUE)
+max(df$VitD_levels, na.rm = TRUE)
+sum(is.na(df$VitD_levels))
+
+hist(df$VitD_levels)
+```
+
+**Doc_visits:**  
+
+An integer value indicating the number of times the
+primary physician visited the patient during the initial
+hospitalization. Doc_visits is a categorical variable ranging from 1 to
+9 with a normal distribution, and there are no null values.
+
+```{r Examine Doc_visits}
+typeof(df$Doc_visits)
+min(df$Doc_visits, na.rm = TRUE)
+max(df$Doc_visits, na.rm = TRUE)
+sum(is.na(df$Doc_visits))
+
+hist(df$Doc_visits, breaks = 9)
+```
+
+**Full_meals_eaten:**  
+
+An integer value for the number of full meals the
+patient ate while hospitalized (partial meals count as 0, and some
+patients had more than three meals in a day if requested). Full meals
+eaten is a categorical variable ranging from 0 to 7 with a right skew.
+There are no null values.
+
+```{r Examine Full_meals_eaten}
+
+typeof(df$Full_meals_eaten)
+min(df$Full_meals_eaten, na.rm = TRUE)
+max(df$Full_meals_eaten, na.rm = TRUE)
+sum(is.na(df$Full_meals_eaten))
+
+hist(df$Full_meals_eaten, breaks = 8)
+```
+
+**VitD_supp:**  
+
+An integer value indicating the number of times that
+vitamin D supplements were administered to the patient. Vitamin D
+supplements is categorical variable ranging from 0 to 5 with a right
+skew. There are no null values.
+
+```{r Examine VitD_supp}
+
+typeof(df$VitD_supp)
+min(df$VitD_supp, na.rm = TRUE)
+max(df$VitD_supp, na.rm = TRUE)
+sum(is.na(df$VitD_supp))
+
+hist(df$VitD_supp, breaks = 6)
+```
+
+**Soft_drink:**  
+
+A character string indicating whether the patient
+habitually drinks three or more sodas in a day. Soft drink is a
+categorical variable with two categories: yes and no. There are 2,467
+null values.
+
+```{r Examine Soft_drink}
+
+typeof(df$Soft_drink)
+unique(df$Soft_drink)
+sum(is.na(df$Soft_drink))
+
+barplot(table(df$Soft_drink), main = "Soft Drink >= 3 per day")
+```
+
+**Initial_admin:**  
+
+This character string gives the means by which the
+patient was admitted into the hospital initially. The initial admission
+variable is categorical with three possibilities: Emergency Admission,
+Elective Admission, Observation Admission. There are no null values.
+
+```{r Examine Initial_admin}
+typeof(df$Initial_admin)
+unique(df$Initial_admin)
+sum(is.na(df$Initial_admin))
+
+barplot(table(df$Initial_admin), main = "Initial Admission Basis")
+```
+
+**HighBlood:**  
+
+A character string indicating whether the patient has
+high blood pressure. The high blood pressure variable is a binary
+categorical variable: yes and no. There are no null values.
+
+```{r Examine HighBlood}
+
+typeof(df$HighBlood)
+unique(df$HighBlood)
+sum(is.na(df$HighBlood))
+
+barplot(table(df$HighBlood), main = "History of High Blood Pressure")
+```
+
+**Stroke:**  
+
+A character string indicating whether the patient has had a
+stroke. The stroke variable is categorical with two categories: yes and
+no. There are no null values.
+
+```{r Examine Stroke}
+
+typeof(df$Stroke)
+unique(df$Stroke)
+sum(is.na(df$Stroke))
+
+barplot(table(df$Stroke), main = "History of Stroke")
+```
+
+**Complication_risk:**  
+
+A character string indicating the level of
+complication risk for the patient as assessed by a primary patient
+assessment. Complication risk is a categorical variable with three
+categories: high, medium, and low. There are no null values.
+
+```{r Examine Complication_risk}
+
+typeof(df$Complication_risk)
+unique(df$Complication_risk)
+sum(is.na(df$Complication_risk))
+
+barplot(table(df$Complication_risk), main = "Assessed Complication Risk")
+```
+
+**Overweight:**  
+
+An integer value that indicates whether the patient is
+considered overweight based on age, gender, and height. The overweight
+variable is stored as an integer, but is a binary categorical variable.
+There are 982 null values.
+
+```{r Examine Overweight}
+
+typeof(df$Overweight)
+min(df$Overweight, na.rm = TRUE)
+max(df$Overweight, na.rm = TRUE)
+sum(is.na(df$Overweight))
+
+barplot(table(df$Overweight), main = "Patient Overweight")
+```
+
+**Arthritis:**  
+
+A character string that indicates whether the patient has
+arthritis. The arthritis variable is categorical with two categories:
+yes and no. There are no null values.
+
+```{r Examine Arthritis}
+
+typeof(df$Arthritis)
+unique(df$Arthritis)
+sum(is.na(df$Arthritis))
+
+barplot(table(df$Arthritis), main = "History of Arthritis")
+```
+
+**Diabetes:**  
+
+A character string that indicates whether the patient has
+diabetes. The diabetes variable is categorical with two categories: yes
+and no. There are no null values.
+
+```{r Examine Diabetes}
+
+typeof(df$Diabetes)
+unique(df$Diabetes)
+sum(is.na(df$Diabetes))
+
+barplot(table(df$Diabetes), main = "History of Diabetes")
+```
+
+**Hyperlipidemia:**  
+
+A character string that indicates whether the
+patient has hyperlipidemia. The hyperlipidemia variable is categorical
+with two categories: yes and no. There are no null values.
+
+```{r Examine Hyperlipidemia}
+
+typeof(df$Hyperlipidemia)
+unique(df$Hyperlipidemia)
+sum(is.na(df$Hyperlipidemia))
+
+barplot(table(df$Hyperlipidemia), main = "History of Hyperlipidemia")
+```
+
+**BackPain:**  
+
+A character string that indicates whether the patient has
+chronic back pain. The back pain variable is categorical with two
+categories: yes and no. There are no null values.
+
+```{r Examine BackPain}
+
+typeof(df$BackPain)
+unique(df$BackPain)
+sum(is.na(df$BackPain))
+
+barplot(table(df$BackPain), main = "History of Back Pain")
+```
+
+**Anxiety:**  
+
+An integer value that indicates whether the patient has an
+anxiety disorder. The anxiety variable is stored as an integer, but it
+is a categorical variable with two categories: 0 and 1. There are 984
+null values.
+
+```{r Examine Anxiety}
+
+typeof(df$Anxiety)
+min(df$Anxiety, na.rm = TRUE)
+max(df$Anxiety, na.rm = TRUE)
+sum(is.na(df$Anxiety))
+
+barplot(table(df$Anxiety), main = "History of Anxiety")
+```
+
+**Allergic_rhinitis:**  
+
+A character string that indicates whether the
+patient has allergic rhinitis. The allergic rhinitis variable is
+categorical with two categories: yes and no. There are no null values.
+
+```{r Examine Allergic_rhinitis}
+
+typeof(df$Allergic_rhinitis)
+unique(df$Allergic_rhinitis)
+sum(is.na(df$Allergic_rhinitis))
+
+barplot(table(df$Allergic_rhinitis), main = "History of Allergic Rhinitis")
+```
+
+**Reflux_esophagitis:**  
+
+A character string that indicates whether the
+patient has reflux esophagitis. The reflux esophagitis variable is
+categorical with two categories: yes and no. There are no null values.
+
+```{r Examine Reflux_esophagitis}
+
+typeof(df$Reflux_esophagitis)
+unique(df$Reflux_esophagitis)
+sum(is.na(df$Reflux_esophagitis))
+
+barplot(table(df$Reflux_esophagitis), main = "History of Reflux Esophagitis")
+```
+
+**Asthma:**  
+
+A character string that indicates whether the patient has
+asthma. The asthma variable is categorical with two categories: yes and
+no. There are no null values.
+
+```{r Examine Asthma}
+
+typeof(df$Asthma)
+unique(df$Asthma)
+sum(is.na(df$Asthma))
+
+barplot(table(df$Asthma), main = "History of Asthma")
+```
+
+**Services:**  
+
+A character string that indicates the primary service the
+patient received while hospitalized. The services variable is
+categorical with four categories: blood work, CT scan, intravenous, and
+MRI. There are no null values.
+
+```{r Examine Services}
+
+typeof(df$Services)
+unique(df$Services)
+sum(is.na(df$Services))
+
+barplot(table(df$Services), main = "Primary Service Received")
+```
+
+**Initial_days:**  
+
+A double-precision floating-point number indicating
+the number of days the patient stayed in the hospital during the initial
+visit. Initial days is a continuous variable ranging from 1.001981 to
+71.98149 with a quadratic U distribution. There are 1,056 null values.
+
+```{r Examine Initial_days}
+
+typeof(df$Initial_days)
+min(df$Initial_days, na.rm = TRUE)
+max(df$Initial_days, na.rm = TRUE)
+sum(is.na(df$Initial_days))
+
+hist(df$Initial_days)
+```
+
+**TotalCharge:**  
+
+A double-precision floating-point number indicating the
+amount charged to the patient daily. This value reflects an average per
+patient based on the total charge divided by the number of days
+hospitalized This amount reflects the typical charges billed to patients
+not including specialized treatments. Total charge is a continuous
+variable ranging from 1256.752 to 21524.22 with a bimodal distribution.
+There are no null values.
+
+```{r Examine TotalCharge}
+
+typeof(df$TotalCharge)
+min(df$TotalCharge, na.rm = TRUE)
+max(df$TotalCharge, na.rm = TRUE)
+sum(is.na(df$TotalCharge))
+
+hist(df$TotalCharge)
+```
+
+**Additional_charges:**  
+
+A double-precision floating-point number
+indicating the average amount charged to the patient for miscellaneous
+procedures, treatments, medicines, anesthesiology, etc. Additional
+charges is a continuous variable ranging from 3125.703 to 30566.07 with
+a right skew. There are no null values.
+
+```{r Examine Additional_charges}
+
+typeof(df$Additional_charges)
+min(df$Additional_charges, na.rm = TRUE)
+max(df$Additional_charges, na.rm = TRUE)
+sum(is.na(df$Additional_charges))
+
+hist(df$Additional_charges)
+```
+
+#### Customer Survey Data
+
+The following variables represent responses to an eight question survey
+asking customers to rate the importance of various factors/surfaces on a
+scale of 1 to 8 (1 most important, 8 least important). They are all
+integer values.
+
+**Item1:**  
+
+Timely admission. Item 1 is a categorical variable ranging
+from 1 to 8. There are no null values.
+
+```{r Examine Item1}
+
+typeof(df$Item1)
+min(df$Item1, na.rm = TRUE)
+max(df$Item1, na.rm = TRUE)
+sum(is.na(df$Item1))
+
+hist(df$Item1, breaks = 8)
+```
+
+**Item2:**  
+
+Timely treatment. Item 2 is a categorical variable ranging
+from 1 to 8. There are no null values.
+
+```{r Examine Item2}
+
+typeof(df$Item2)
+min(df$Item2, na.rm = TRUE)
+max(df$Item2, na.rm = TRUE)
+sum(is.na(df$Item2))
+
+hist(df$Item2, breaks = 8)
+```
+
+**Item3:**  
+
+Timely visits. Item 3 is a categorical variable ranging from
+1 to 8. There are no null values.
+
+```{r Examine Item3}
+
+typeof(df$Item3)
+min(df$Item3, na.rm = TRUE)
+max(df$Item3, na.rm = TRUE)
+sum(is.na(df$Item3))
+
+hist(df$Item3, breaks = 8)
+```
+
+**Item4:**  
+
+Reliability. Item 4 is a categorical variable ranging from 1
+to 8. There are no null values.
+
+```{r Examine Item4}
+
+typeof(df$Item4)
+min(df$Item4, na.rm = TRUE)
+max(df$Item4, na.rm = TRUE)
+sum(is.na(df$Item4))
+
+hist(df$Item4, breaks = 8)
+```
+
+**Item5:**  
+
+Options. Item 5 is a categorical variable ranging from 1 to
+8. There are no null values.
+
+```{r Examine Item5}
+
+typeof(df$Item5)
+min(df$Item5, na.rm = TRUE)
+max(df$Item5, na.rm = TRUE)
+sum(is.na(df$Item5))
+
+hist(df$Item5, breaks = 8)
+```
+
+**Item6:**  
+
+Hours of treatment. Item 6 is a categorical variable ranging
+from 1 to 8. There are no null values.
+
+```{r Examine Item6}
+
+typeof(df$Item6)
+min(df$Item6, na.rm = TRUE)
+max(df$Item6, na.rm = TRUE)
+sum(is.na(df$Item6))
+
+hist(df$Item6, breaks = 8)
+```
+
+**Item7:**  
+
+Courteous staff. Item 7 is a categorical variable ranging
+from 1 to 8. There are no null values.
+
+```{r Examine Item7}
+
+typeof(df$Item7)
+min(df$Item7, na.rm = TRUE)
+max(df$Item7, na.rm = TRUE)
+sum(is.na(df$Item7))
+
+hist(df$Item7, breaks = 8)
+```
+
+**Item8:**  
+
+Evidence of active listening from doctor. Item 8 is a
+categorical variable ranging from 1 to 8. There are no null values.
+
+```{r Examine Item8}
+
+typeof(df$Item8)
+min(df$Item8, na.rm = TRUE)
+max(df$Item8, na.rm = TRUE)
+sum(is.na(df$Item8))
+
+hist(df$Item8, breaks = 8)
+```
+
+***
+
+## Part II: Data-Cleaning Plan
+
+C.  Explain the plan for cleaning the data by doing the following:
+
+1.  Propose a plan that includes the relevant techniques and specific
+    steps needed to identify anomalies in the data set.
+
+2.  Justify your approach for assessing the quality of the data,
+    include:
+
+-   characteristics of the data being assessed,
+
+-   the approach used to assess the quality.
+
+3.  Justify your selected programming language and any libraries and
+    packages that will support the data-cleaning process.
+
+4.  Provide the code you will use to identify the anomalies in the data.
+
+***
+
+As above, I will continue using R as my chosen language to explore and
+clean the assigned data set. I do have easy access to Python, Julia, and
+R among other languages and tools; the work could be completed with
+roughly equal quality by using any of them. However, I prefer the
+visualization strengths and more intuitive nature of R. As I carry out
+my work flow processes, I also appreciate that R was designed by
+statisticians to accomplish exactly the kind of work that I will be
+undertaking today rather than being more of a general-use language like
+Python (Wickham & Grolemund, 2017, p. xiii).
+
+I will use a number packages to help me work with this data. I have
+already used **readr** to import the csv data so that it is in a format
+that allows for easy reading and data manipulation.
+
+**plyr** and **dplyr** have useful data manipulation functions for what
+would otherwise be tedious multi-step processes.
+
+For missing data and outlier visualization and identification, I will
+use **visdat**, **outliers**, and **ggplot**.
+
+For missing data imputation, I will use **mice** because the imputation
+will be more accurate than simplistic mean, median, and mode
+replacements.
+
+For the PCA analysis and visualizations, I will use **FactoMineR** to
+compute the PCA, **factoextra** to analyze the results, and **corrplot**
+to create visualizations to aid in identifying variable loading on the
+components.
+
+My plan to clean this data set is to perform the following tasks:
+
+1.  Check for duplicate rows and de-duplicate if necessary.
+
+2.  Establish a clean index. It might be possible to use
+    already-existing columns as an index (e.g. X or CaseOrder), but--as
+    a matter of course--we will not rely on those columns in case there
+    are issues that escape a cursory (or even thorough) glance. It is a
+    simple matter to create a new index that we know will be clean.
+
+3.  Identify columns that provide no value for analysis. Some fields in
+    this data set provide information that is used primarily to identify
+    an individual person or interaction from the record (e.g.
+    Customer_id, Interaction, etc.). This is not within the scope of our
+    analysis, so we will dispense with columns that provide no other
+    data beyond pointing to a unique person's identity. Additionally,
+    some columns are inconsistent. Some of the information provided may
+    apply to the patient or it may apply to the primary insured (e.g.
+    Job, Marital, etc.); this makes those columns unreliable as they
+    might skew the data inaccurately.
+
+4.  Convert character data to numeric or factor. Not all data seems to
+    be stored in an optimum format. We will examine some of these and
+    convert their format such that the analytic value of the data can be
+    more readily leveraged. For example, we identified 26 categories in
+    the TimeZone column; however, there are only six time zones within
+    the USA--including Alaska and Hawaii. These categories can be
+    consolidated. Also, education and the binary categorical variables
+    (e.g. Arthritis, Diabetes, Hyperlipidemia, BackPain, etc) would be
+    more easily analyzed if they were stored numerically as 0/1. Other
+    values (e.g. State, Gender, etc.) are better stored as factors
+    though we can also create numeric versions of that data for PCA
+    purposes.
+
+5.  Rename columns for accuracy. Some field values are misleading, so we
+    will rename them to indicate precisely what they mean to us. The
+    Income field could refer to either the patient or the primary
+    insured. Unlike the Job and Marital fields, income of either the
+    patient or the insured will speak to some level of socioeconomic
+    status and inferred access to medical care. Hence, the field may be
+    relevant, but we need to label it correctly to interpret its impact
+    and meaning accurately. Other fields are overly generic. Item1
+    through Item8 refer to specific survey responses for which we are
+    provided titles, so we will rename the columns to reflect what that
+    data actually represent.
+
+6.  Deal with NULL/NA values by removal or imputation. We cannot leave
+    the NA values in place as some formulas (particularly PCA) will not
+    allow any NA values. We will want to remove as little data as
+    possible, so we will likely impute missing fields with **mice**.
+
+7.  Identify and deal with outliers as appropriate. Statistical outliers
+    can exert a disproportionate level of influence over analysis
+    results. This could lead us to false conclusions that will not help
+    the hospital identify the patients that are most likely to be
+    readmitted within one month.
+    
+    a.  View summary of univariate statistics, search for flags.
+    b.  Visualize potential outliers with box plots and/or Six Sigma
+        plots.
+    c.  Run hypothesis test to check for outliers.
+    d.  Standardize data to be used in the PCA. Because PCA is
+        particularly sensitive to the ranges of variables, we will
+        standardize as much of the numerical data as we can.
+
+***
+
+## Part III: Data Cleaning
+
+D.  Summarize the data-cleaning process by doing the following:
+
+
+1.  Describe the findings, including all anomalies, from the
+    implementation of the data-cleaning plan from part C.
+
+2.  Justify your methods for mitigating each type of discovered anomaly
+    in the data set.
+
+3.  Summarize the outcome from the implementation of each data-cleaning
+    step.
+
+4.  Provide the code used to mitigate anomalies.
+
+***
+
+### Part III, D.1-4: Describe, Justify, and Summarize Cleaning Process and Findings
+
+#### Data Deduplication
+
+When exploring each variable, we discovered that the Customer_id, Interaction, and UID columns contain no duplicate values. This is likely sufficient to show that there are no truly duplicated rows. However, we can check to see if any duplicated data exists absent the the first five columns (DeHan, 2019).
+
+There are no duplicated rows with which we need to contend, so we will move on.
+```{r Check for Data Duplication}
+df[duplicated(df[,(6:15)]),]
+```
+
+#### Impose a Clean Index  
+  
+We will assign the number of rows to a variable, *n*, to use with creating a column of integers to be our new index (Larose & Larose, 2019, pp. 32-33). We can use data slicing techniques to reorder the columns in the data frame (DeHan, 2019).
+```{r Create Clean Index}
+n <- dim(df)[1]
+df$Index <- c(1:n)
+df <- df[,c(54,1:53)]
+head(df)
+rm(n)
+```
+
+#### Variable Removal  
+  
+  
+We will use the **colnames** function to verify column removal and visually track our work flow (DeHan, 2019), and we will specify the subset of columns we want to keep using the subset function (Larose & Larose, 2019, p. 103).
+
+**X and CaseOrder**  
+
+We will not use the two previously imposed indices: X (unnamed) and CaseOrder. These columns provide no value for analysis. Additionally, there is not a compelling reason--at this stage--to use values that can be used to identify individual persons from whose medical records this data was compiled.
+
+
+**Customer_id**  
+
+We will not use Customer_id. This data provides no value for analysis. Additionally, there is not a compelling reason--at this stage--to focus on a value that can be used to identify individual persons from whose medical records this data was compiled.
+
+
+**Interaction**    
+
+We will not use Interaction. This data provides no value for analysis. Additionally, there is not a compelling reason--at this stage--to focus on a value that can be used to identify individual persons from whose medical records this data was compiled.
+
+
+**UID**  
+
+We will not use UID. This data provides no value for analysis. Additionally, there is not a compelling reason--at this stage--to focus on a value that can be used to identify individual persons from whose medical records this data was compiled.
+
+
+**Job**  
+
+We will not use Job. The data in this field could represent either the patient or the primary insurance holder. This could cause a false correlation.
+
+
+**Marital**  
+We will not use Marital. The data in this field could represent either the patient or the primary insurance holder. This could obscure viable patterns or cause a false correlation.
+
+
+***
+
+#### Convert Character Data to Numeric or Factor
+
+Because we intend to conduct PCA after cleaning this data, we will try to avoid converting character data into factor data (which usually does not account for relative differences between factors). Instead we will impose a numeric scale as neutrally as we can.
+
+**Timezone**  
+Earlier, we identified Timezone as a categorical variable with too many categories.
+
+```{r List Unique Timezone Values}
+unique(df$Timezone)
+```
+
+The are only eight distinct time zones in the United States at any given time: Atlantic Time, Hawaii-Aleutian time, Alaska time, Pacific time, Mountain time, Central time, Samoa Time, and Eastern time. We do not need 26 different time zones in our data frame.
+
+Instead we will convert the character data to numeric data (Larose & Larose, 2019, pp. 38-39) using each of the areas' UTC offsets (Thorsen, 2021).
+
+```{r Call "plyr" Library}
+library(plyr)
+```
+
+```{r Convert Timezone to Numeric}
+time.num <- revalue (x = df$Timezone, replace = c(
+  "America/Puerto_Rico" = -4,
+  "America/Detroit" = -4,
+  "America/Indiana/Indianapolis" = -4,
+  "America/Indiana/Marengo" = -4,
+  "America/Indiana/Vincennes" = -4,
+  "America/Indiana/Vevay" = -4,
+  "America/Indiana/Winamac" = -4,
+  "America/Kentucky/Louisville" = -4,
+  "America/New_York" = -4,
+  "America/Toronto" = -4,
+  "America/Chicago" = -5,
+  "America/Indiana/Knox" = -5,
+  "America/Indiana/Tell_City" = -5,
+  "America/Menominee" = -5,
+  "America/North_Dakota/Beulah" = -5,
+  "America/North_Dakota/New_Salem" = -5,
+  "America/Boise" = -6,
+  "America/Denver" = -7,
+  "America/Phoenix" = -7,
+  "America/Los_Angeles" = -7,
+  "America/Anchorage" = -8,
+  "America/Nome" = -8,
+  "America/Sitka" = -8,
+  "America/Yakutat" = -8,
+  "America/Adak" = -9,
+  "Pacific/Honolulu" = -10))
+
+df$Timezone <- as.integer(time.num)
+typeof(df$Timezone)
+unique(df$Timezone)
+rm(time.num)
+```
+
+**City**  
+
+We will leave city as character data due to the large number of possible values.
+```{r Examine City}
+typeof(df$City)
+length(unique(df$City))
+```
+
+**County**  
+
+We will leave county as character data due to the large number of possible values.
+```{r Examine County}
+typeof(df$County)
+length(unique(df$County))
+```
+
+**State**  
+
+We will convert the State field to factor data.
+```{r Convert State to Factor}
+typeof(df$State)
+length(unique(df$State))
+df$State = as.factor(df$State)
+typeof(df$State)
+```
+
+**Area** 
+
+We will convert area to factor data.
+```{r Convert Area to Factor}
+typeof(df$Area)
+df$Area <- factor(df$Area, levels = c("Rural", "Suburban", "Urban"))
+typeof(df$Area)
+```
+
+**Education**  
+
+With respect to Education, we can impose a meaningful ordering. However, we will keep the original data due to some loss in information in the conversion.
+```{r Convert Education to Factor}
+typeof(df$Education)
+df$Education <- factor(c(df$Education), levels = c(
+"No Schooling Completed",
+"Nursery School to 8th Grade",
+"9th Grade to 12th Grade, No Diploma",
+"GED or Alternative Credential",
+"Regular High School Diploma",
+"Some College, Less than 1 Year",
+"Some College, 1 or More Years, No Degree",
+"Associate's Degree",
+"Bachelor's Degree",
+"Master's Degree",
+"Professional School Degree",
+"Doctorate Degree"))
+typeof(df$Education)
+```
+
+**Employment**
+
+We will convert this variable to factor data.
+```{r Convert Employment to Factor}
+typeof(df$Employment)
+df$Employment <- factor(df$Employment, levels = c("Unemployed", "Student", "Part Time", "Full Time", "Retired"))
+unique(df$Employment)
+typeof(df$Employment)
+```
+
+**Gender**  
+
+We will impose a numeric value before performing the PCA, and we will convert the original data from character to factor.
+```{r Convert Gender to Factor}
+typeof(df$Gender)
+unique(df$Gender)
+df$Gender <- factor(df$Gender, levels = c("Male", "Prefer not to answer", "Female"))
+typeof(df$Gender)
+```
+
+**Readmission**
+
+Like many of the binary categorical variables in this data set, we will convert them to 0/1 values for no/yes.
+```{r Convert ReAdmis to Numeric}
+typeof(df$ReAdmis)
+unique(df$ReAdmis)
+binary_data <- df$ReAdmis
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$ReAdmis <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$ReAdmis)
+unique(df$ReAdmis)
+```
+
+**Soft_Drink**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Soft_Drink to Numeric}
+typeof(df$Soft_drink)
+unique(df$Soft_drink)
+binary_data <- df$Soft_drink
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Soft_drink <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Soft_drink)
+unique(df$Soft_drink)
+```
+
+**Initial Admission**
+
+We will create a new column and impose a numerical ordering on Initial Admission based on the severity of admission. We will standardize the data prior to performing the PCA. The original data will be converted to factor data.
+```{r Convert Initial_admin to Factor}
+typeof(df$Initial_admin)
+unique(df$Initial_admin)
+df$Initial_admin <- factor(df$Initial_admin, levels = c("Elective Admission", "Observation Admission", "Emergency Admission"))
+typeof(df$Initial_admin)
+unique(df$Initial_admin)
+```
+
+**High Blood Pressure**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert HighBlood to Numeric}
+typeof(df$HighBlood)
+unique(df$HighBlood)
+binary_data <- df$HighBlood
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$HighBlood <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$HighBlood)
+unique(df$HighBlood)
+```
+
+**Stroke**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Stroke to Numeric}
+typeof(df$Stroke)
+unique(df$Stroke)
+binary_data <- df$Stroke
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Stroke <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Stroke)
+unique(df$Stroke)
+```
+
+**Complication Risk**
+
+We will impose an intuitive numeric ordering on Complication Risk giving the lowest value (1) to the low risk, the middle value (3) to medium risk, and the highest value (5) to high risk.
+```{r Convert Complication Risk to Factor}
+typeof(df$Complication_risk)
+unique(df$Complication_risk)
+df$Complication_risk  <- factor(df$Complication_risk, levels = c("Low", "Medium", "High"))
+typeof(df$Complication_risk)
+unique(df$Complication_risk)
+```
+
+**Arthritis**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Arthritis to Numeric}
+typeof(df$Arthritis)
+unique(df$Arthritis)
+binary_data <- df$Arthritis
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Arthritis <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Arthritis)
+unique(df$Arthritis)
+```
+
+**Diabetes**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Diabetes to Numeric}
+typeof(df$Diabetes)
+unique(df$Diabetes)
+binary_data <- df$Diabetes
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Diabetes <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Diabetes)
+unique(df$Diabetes)
+```
+
+**Hyperlipidemia**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Hyperlipidemia to Numeric}
+typeof(df$Hyperlipidemia)
+unique(df$Hyperlipidemia)
+binary_data <- df$Hyperlipidemia
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Hyperlipidemia <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Hyperlipidemia)
+unique(df$Hyperlipidemia)
+```
+
+**Back Pain**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert BackPain to Numeric}
+typeof(df$BackPain)
+unique(df$BackPain)
+binary_data <- df$BackPain
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$BackPain <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$BackPain)
+unique(df$BackPain)
+```
+
+**Allergic Rhinitis**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Allergic_rhinitis to Numeric}
+typeof(df$Allergic_rhinitis)
+unique(df$Allergic_rhinitis)
+binary_data <- df$Allergic_rhinitis
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Allergic_rhinitis <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Allergic_rhinitis)
+unique(df$Allergic_rhinitis)
+```
+
+**Reflux Esophagitis**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Reflux_esophagitis to Numeric}
+typeof(df$Reflux_esophagitis)
+unique(df$Reflux_esophagitis)
+binary_data <- df$Reflux_esophagitis
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Reflux_esophagitis <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Reflux_esophagitis)
+unique(df$Reflux_esophagitis)
+```
+
+**Asthma**
+
+This binary categorical data will be converted to numeric using the same system as all others.
+```{r Convert Asthma to Numeric}
+typeof(df$Asthma)
+unique(df$Asthma)
+binary_data <- df$Asthma
+binary_converter <- c("No" = 0, "Yes" = 1)
+binary_converted <- revalue(x= binary_data, replace = binary_converter)
+df$Asthma <- as.integer(binary_converted)
+rm(binary_data)
+rm(binary_converter)
+rm(binary_converted)
+typeof(df$Asthma)
+unique(df$Asthma)
+```
+
+**Services**  
+
+Services data will be converted from character to factor data. In addition we will impose a numeric scale based on proportion of patients receiving that treatment as a proxy for severity of patients' condition. Bloodwork will be the basis level for each of the other treatments.
+```{r Convert Services to Factor}
+typeof(df$Services)
+unique(df$Services)
+df$Services = factor(df$Services, levels = c("Blood Work", "Intravenous", "CT Scan", "MRI"))
+typeof(df$Services)
+unique(df$Services)
+```
+
+***
+
+#### Rename columns
+
+**Income**  
+
+The Income variable may refer to income of the patient themselves or to the income of the primary insured, so we will rename the variable to more closely approximate it's true meaning.
+```{r Rename Income}
+colnames(df)[21]
+names(df)[names(df) == 'Income'] <- 'Household_Income'
+colnames(df)[21]
+```
+
+**Survey Responses**  
+
+The columns to the survey questions are not descriptive at all without a guide. We will rename them to provide at-a-glance significance.
+```{r Rename Survey Items}
+colnames(df)[47:54]
+names(df)[names(df) == 'Item1'] <- 'Timely_Admission_Survey'
+names(df)[names(df) == 'Item2'] <- 'Timely_Treatment_Survey'
+names(df)[names(df) == 'Item3'] <- 'Timely_Visits_Survey'
+names(df)[names(df) == 'Item4'] <- 'Reliability_Survey'
+names(df)[names(df) == 'Item5'] <- 'Options_Survey'
+names(df)[names(df) == 'Item6'] <- 'Treatment_Hours_Survey'
+names(df)[names(df) == 'Item7'] <- 'Courteous_Staff_Survey'
+names(df)[names(df) == 'Item8'] <- 'Active_Listening_Survey'
+colnames(df)[47:54]
+```
+
+#### Data Imputation
+
+During our exploration of each variable, we saw that there are
+observations that contain missing data. In fact, over 89% of the rows
+have some form of missing data. The percentage of null values in
+variables with missing observations range from \~9% to \~26%. Row
+deletion is not a viable option. We might try to infer meaning from some
+patient provided data, but--out of sensitivity for inserting bias--we
+will use the mice method for value imputation (Burger, 2019).
+
+```{r Call visdat Library}
+library(visdat)
+```
+
+```{r Plot Missing Data}
+sum(complete.cases(df) == FALSE)
+vis_dat(df)
+dfwithna <- subset(df, select = c('Children', 'Age', 'Household_Income', 'Soft_drink', 'Overweight', 'Anxiety', 'Initial_days'))
+vis_miss(dfwithna)
+rm(dfwithna)
+```
+
+```{r Call mice Package}
+library(mice)
+```
+
+```{r Plot Missing Data Paterns}
+tail(md.pattern(df[,c(17,18,21,29,34,39,44)]))
+```
+
+```{r Remove rows missing 5 observations}
+x <- which(rowSums(is.na(df)) == 5)
+df <- df[-c(x), ] 
+rm(x)
+```
+
+**Data Imputation** Following the lessons, we will use a seed value for
+consistency.
+
+```{r Impute Missing Data}
+temp_mice <- mice(df, m=5, maxit=5, seed=5)
+df <- complete(temp_mice, 4)
+rm(temp_mice)
+sum(complete.cases(df) == FALSE)
+```
+
+No missing data remains.
+
+***
+
+#### Outlier Visualization, Analysis, Remediation, and Standardization
+
+We will perform univariate (and occasional bivariate) analysis on each
+variable in order to ascertain where outliers might be in the data and
+to help decide what should be done (if anything) to cope with those
+extreme values (Poulson, 2016). We will also use the Six Sigma method to
+plot the same data for a more complete picture of what might be causing
+the extreme values (Burger, 2019). The Grubbs test will be used to
+determine statistical significance of potential outliers (Burger, 2019).
+
+```{r Examine Columns}
+head(df)
+```
+
+```{r Call Library ggplot2}
+library(ggplot2)
+```
+
+**Lat/Lng**
+
+Starting with both the Lat/Lng variables, we can see that there may be
+an issue with outliers in both fields.
+
+```{r Lat-Long Univariate}
+
+summary(df$Lat)
+summary(df$Lng)
+
+Lat_univariate <- qplot(data = df, y= Lat, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Lat') +
+geom_text(aes(label=ifelse(Lat %in% boxplot.stats(Lat)$out,
+as.character(Zip), "")), hjust = 1.5)
+Lat_univariate
+rm(Lat_univariate)
+
+
+Lng_univariate <- qplot(data = df, y= Lng, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Lng') +
+geom_text(aes(label=ifelse(Lng %in% boxplot.stats(Lng)$out,
+as.character(Zip), "")), hjust = 1.5)
+Lng_univariate
+rm(Lng_univariate)
+```
+
+A Six Sigma analysis also shows potential outliers.
+
+```{r Lat-Long Six Sigma Analysis}
+
+x = df$Lat
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Latitude")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+
+
+
+x = df$Lng
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Longitude")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+
+```
+
+Any trimming of outliers will likely exclude Alaska, Puerto Rico, or
+Hawaii. We will standardize the variables to account for their
+significantly larger range and include them in lieu of other location
+variables with respect to the future PCA due to their being continuous.
+
+```{r Lat-Long Bivariate Analysis}
+
+LatLng_bivar <- qplot(data = df,
+        x = Lng,
+        y = Lat,
+        main = "Patients' Lat/Long According to Billing Data")
+LatLng_bivar
+rm(LatLng_bivar)
+
+```
+
+```{r Create Standardized Lat-Long}
+df$Lat_z <- scale(x = df$Lat)
+df$Lng_z <- scale(x = df$Lng)
+```
+
+**Population**
+
+We begin with a cursory glance at the data summary column by column.
+
+```{r Summarize Population}
+summary(df$Population)
+```
+
+On the surface, there could be outliers on either extremes of this
+column. We will proceed with examining this possibility.
+
+Zip code seems to be the independent variable generating Population, so
+that is how we will label and examine the areas.
+
+```{r Population Univariate}
+
+pop_univariate <- qplot(data = df, y= Population, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Population') +
+geom_text(aes(label=ifelse(Population %in% boxplot.stats(Population)$out,
+as.character(Zip), "")), hjust = 1.5)
+pop_univariate
+rm(pop_univariate)
+```
+
+```{r Select Population Areas Greater than 100,000}
+highpop <- subset(df, Population >= 100000,
+select=c(Zip, Population))
+highpop
+rm(highpop)
+```
+
+I will also run an a Six Sigma analysis here, as the box plot method
+shows outliers on the high end only, but those values are quite possibly
+valid. For example, the top most populate zip code in Texas is 77449,
+and the population there according to Wikipedia matches the data we have
+in the data frame. In fact the top six zip codes show populations of
+over 100,000 on a Google search. We may want to consider these values as
+outliers regardless of their accuracy, but we will look into the matter
+further first.
+
+```{r Six Sigma Population Analysis}
+
+x = df$Population
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Population Six Sigma Outlier Plot")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+We will apply the Grubbs test to this column.
+
+```{r Call library outliers}
+library("outliers")
+```
+
+```{r Grubbs Test on Population (1)}
+grubbs.test(df$Population)
+```
+
+This Grubbs test shows that the very high population areas will likely
+have a significant impact on our final results. We will look at removing
+the most extreme data.
+
+```{r Divide Population Areas Greater/Less Than 69,500}
+sum(df$Population > 69500)
+(sum(df$Population > 69500) / 10000)*100
+
+df2 <- subset(df, Population < 69500, select=c(Zip, Population))
+summary(df$Population)
+summary(df2$Population)
+```
+
+```{r Grubbs Test on Subset Population Less Than 69,500}
+grubbs.test(df2$Population)
+```
+
+While the highest 62 entries in the Population column are likely
+accurate, they are statistical outliers and may skew the data such that
+it does not generalize well. For this reason, we will remove the rows
+from the data frame. This can be justified due to these rows comprising
+less than 0.75% of the total data. It brings the p-value to be above
+0.05--just above the level of strict statistical significance.
+
+```{r Remove Population > 69500}
+df <- subset(df, Population < 69500)
+rm(df2)
+```
+
+Even with the outliers removed, we will standardize the data so as not
+to skew the PCA.
+
+```{r Create Standardized Population Variable}
+summary(df$Population)
+df$Population_z <- scale(x = df$Population)
+```
+
+**Area**
+
+We were not able to standardize data prior to running data imputation.
+Now we will standardize the field for PCA purposes.
+
+```{r Examine Population density by area}
+pop.rural <- subset(df, Area == "Rural", select = "Population")
+pop.suburban <- subset(df, Area == "Suburban", select = "Population")
+pop.urban <- subset(df, Area == "Urban", select = "Population")
+sum(pop.rural$Population) / dim(pop.rural)[1]
+sum(pop.suburban$Population) / dim(pop.suburban)[1]
+sum(pop.urban$Population) / dim(pop.urban)[1]
+
+rm(pop.rural)
+rm(pop.suburban)
+rm(pop.urban)
+```
+
+For the Area variable, we will convert to numeric data
+according to population density (1 for least dense and 3 for most
+dense). We do not want a large range for this numeric version of the
+variable because we can see that the average population density by Area
+does not actually differ greatly.
+
+```{r Convert Area to Numeric}
+typeof(df$Area)
+
+temp_area <- as.character(df$Area)
+area_converter <- c(
+"Rural" = 0,
+"Suburban" = 1,
+"Urban" = 2
+)
+area_converted <- revalue(x= temp_area, replace = area_converter)
+df$Area_numeric <- as.integer(area_converted)
+rm(temp_area)
+rm(area_converter)
+rm(area_converted)
+unique(df$Area)
+typeof(df$Area)
+```
+
+
+```{r Create Standardized Area Variable}
+df$Area_z <- scale(x = df$Area_numeric)
+df <- subset(df, select = -Area_numeric)
+```
+
+**Timezone** In case we determine that we would like to use timezone for
+the PCA, we can create a standardized variable now. We will use the
+numeric version of the data.
+
+```{r Create Standardized Timezone Variable}
+df$Timezone_z <- scale(x = df$Timezone)
+```
+
+**Children**
+
+We will examine the Children variable for outliers.
+
+```{r Summarize Children Variable}
+summary(df$Children)
+```
+
+```{r Children Univariate Analysis}
+
+child_uni <- qplot(data = df, y=Children, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Children') +
+geom_text(aes(label=ifelse(Children %in% boxplot.stats(Children)$out,
+as.character(Children), "")), hjust = 1.5)
+child_uni
+rm(child_uni)
+```
+
+It appears as though there may be outliers on the high end of the data.
+
+```{r Children Six Sigma Analysis}
+
+x = df$Children
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Children Six Sigma Outlier Plot")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+The Six Sigma test also shows potential outliers on the high end.
+
+```{r Children Grubbs Test}
+grubbs.test(df$Children)
+```
+
+There are a number entries where the number of children in the household
+seems high. However, considering that the p-value is 1 (well above
+0.05), we will leave the Children column as-is. However, we will create
+a standardized column for PCA purposes.
+
+```{r Create Standardized Children Column}
+df$Children_z <- scale(x = df$Children)
+```
+
+**Age**
+
+```{r Summarize Age Variable}
+summary(df$Age)
+```
+
+```{r Age Univariate Analysis}
+age_uni <- qplot(data = df, y= Age, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Age') +
+geom_text(aes(label=ifelse(Age %in% boxplot.stats(Age)$out,
+as.character(Age), "")), hjust = 1.5)
+age_uni
+rm(age_uni)
+```
+
+```{r Age Six Sigma Analysis}
+x = df$Age
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Age Six Sigma Outlier Plot")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs Test on Age}
+grubbs.test(df$Age)
+```
+
+Every test we have shows that the Age variable does not have any extreme
+values with which we need to be concerned. We will create a standardized
+variable for PCA purposes.
+
+```{r Create Standardized Age Variable}
+df$Age_z <- scale(x = df$Age)
+```
+
+**Education**
+
+We have 12 distinct levels to consider. We will try to generalize each
+description by an approximation of the number of years of schooling
+required to attain the given education level.
+
+```{r Create Numeric Education Variable}
+temp_education <- as.character(df$Education)
+education_converter <- c(
+"No Schooling Completed" = 0,
+"Nursery School to 8th Grade" = 8,
+"9th Grade to 12th Grade, No Diploma" = 11,
+"GED or Alternative Credential" = 12,
+"Regular High School Diploma" = 12,
+"Some College, Less than 1 Year" = 12,
+"Some College, 1 or More Years, No Degree" = 13,
+"Associate's Degree" = 14,
+"Bachelor's Degree" = 16,
+"Master's Degree" = 18,
+"Professional School Degree" = 20,
+"Doctorate Degree" = 21
+)
+education_converted <- revalue(x= temp_education, replace = education_converter)
+df$Education_numeric <- as.numeric(education_converted)
+rm(temp_education)
+rm(education_converter)
+rm(education_converted)
+unique(df$Education_numeric)
+typeof(df$Education_numeric)
+```
+
+```{r Summarize Education Variable}
+summary(df$Education)
+```
+
+```{r Education Univariate Analysis}
+
+ed_uni <- qplot(data = df, y= Education_numeric, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Education') +
+geom_text(aes(label=ifelse(Education_numeric %in% boxplot.stats(Education_numeric)$out,
+as.character(Education_numeric), "")), hjust = 1.5)
+ed_uni
+rm(ed_uni)
+```
+
+It appears that the only possible outlier for Education is on the low
+end.
+
+```{r Education Six Sigma Analysis}
+
+x = df$Education_numeric
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Education Six Sigman Outlier Plot")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs Test on Education}
+grubbs.test(df$Education_numeric)
+```
+
+We will create a standardized Education value column for PCA purposes.
+```{r Create Standardized Education Variable}
+df$Education_z <- scale(x = df$Education_numeric)
+df <- subset (df, select = -Education_numeric)
+```
+
+
+
+**Employment**   
+
+We will impose an ordering on the employment status giving the highest
+value (46) to Full Time employment to denote the highest number of work
+hours. Unemployed and Retired will both be converted to 0 in order to
+denote no work hours. Student will be given assigned a value of 25 in
+order to account for the amount of work they do at school relative to
+someone who is employed full time. Part time will be given a value of
+26. We will retain the original information as factor data instead of
+character data. We are using the average work hours as given by Saad, A
+(2014) that we will scale according to Gallup, Inc. (2020) poll
+responses; their data collection methods are identical.
+
+We will create a standardized Employment value column for
+PCA purposes. We will also remove the Employment_numeric column. Its
+purpose was to be an intermediary step to standardized data.
+
+```{r Convert Employment to Numeric}
+temp_employment <- as.character(df$Employment)
+employment_converter <- c(
+"Unemployed" = 0,
+"Student" = 25,
+"Part Time" = 26,
+"Full Time" = 46,
+"Retired" = 0
+)
+employment_converted <- revalue(x= temp_employment, replace = employment_converter)
+df$Employment_numeric <- as.numeric(employment_converted)
+rm(temp_employment)
+rm(employment_converter)
+rm(employment_converted)
+
+unique(df$Employment_numeric)
+typeof(df$Employment_numeric)
+```
+
+```{r Create Standardized Employment Variable}
+df$Employment_z <- scale(x = df$Employment_numeric)
+df <- subset (df, select = -Employment_numeric)
+```
+
+
+
+**Household Income**
+```{r Summarize Household_Income Variable}
+summary(df$Household_Income)
+```
+
+This particular column has a very large range. We will continue
+examining the values.
+```{r Income Univariate Analysis}
+
+income_uni <- qplot(data = df, y= Household_Income, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Household_Income') +
+geom_text(aes(label=ifelse(Household_Income %in% boxplot.stats(Household_Income)$out,
+as.character(Household_Income), "")), hjust = 1.5)
+income_uni
+rm(income_uni)
+```
+
+It would appear that we have many outliers on the high end. I will
+proceed with the six sigma analysis.
+```{r Household Income Six Sigma Analysis}
+
+x = df$Household_Income
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t; b1
+b2 = m + s*t; b2
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Household Income Six Sigma Outlier Plot")
+
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs test on Household_Income}
+grubbs.test(df$Household_Income)
+```
+
+Based on the results of the Grubbs test. I am not comfortable leaving
+the data as-is. I would like to see how many rows have a Household
+Income greater than \$125,000 which is a visual estimate of where the
+cutoff for outliers might be.
+
+```{r Count of Household_Income greater than $125,000}
+sum(df$Household_Income > 125000)
+```
+
+The household income field does have outliers on the high end. We will
+explore the relationship between Household Income and other variables.
+Removing all the rows with incomes over \$125,000 would comprise a
+larger loss of data than I would like.
+
+```{r Bivariate Analysis of High Income Earners and ReAdmis}
+
+#  Bivariate Analysis of High Income Earners and ReAdmis
+HighEarners <- subset(df, df$Household_Income > 100000)
+Income_bivar <- qplot(data = HighEarners,
+        x = Household_Income,
+        y = ReAdmis,
+        main = "Bivariate Analysis of High Income Earners and ReAdmis")
+Income_bivar
+rm(Income_bivar)
+rm(HighEarners)
+```
+
+```{r Bivariate Analysis of High Income Earners and Age}
+
+# Bivariate Analysis of High Income Earners and Age
+HighEarners <- subset(df, df$Household_Income > 100000)
+Income_bivar <- qplot(data = HighEarners,
+        x = Household_Income,
+        y = Age,
+        main = "Bivariate Analysis of High Income Earners and Age")
+Income_bivar
+rm(Income_bivar)
+rm(HighEarners)
+```
+
+```{r Bivariate Analysis of High Income Earners and TotalCharge}
+
+# Bivariate Analysis of High Income Earners and TotalCharge
+HighEarners <- subset(df, df$Household_Income > 100000)
+Income_bivar <- qplot(data = HighEarners,
+        x = Household_Income,
+        y = TotalCharge,
+        main = "Bivariate Analysis of High Income Earners and TotalCharge")
+Income_bivar
+rm(Income_bivar)
+rm(HighEarners)
+```
+
+It's not clear whether the top-most earners present any correlation with
+the target variable (ReAdmis) or other variables that might be
+reasonably assumed to be related to income.
+
+```{r Create Variable without Household Income > $160,000}
+StandardIncome <- subset(df, df$Household_Income < 160000)
+sum(df$Household_Income > 160000)
+```
+
+```{r Grubbs Test on Household Income without High Earners}
+grubbs.test(StandardIncome$Household_Income)
+rm(StandardIncome)
+```
+
+We will remove rows with incomes greater than 160,000. This will result
+in losing less than 1% of our total data.
+
+```{r Remove Household_Income greater than $160,000}
+dim(df)[1]
+df <- subset(df, df$Household_Income <= 160000)
+dim(df)[1]
+```
+
+Due to the range of income, we will create a standardized value column
+but retain the original column for reference.
+
+```{r Create Standardized Household_Income variable}
+summary(df$Household_Income)
+df$Household_Income_z <- scale(x = df$Household_Income)
+```
+
+**Gender**
+
+In order to include gender in the PCA, we will create a numeric variable
+centered on 0 to account for the three categories. That variable will
+then be standardized.
+
+```{r Convert Gender Variable to Numeric}
+temp_Gender <- as.character(df$Gender)
+Gender_converter <- c(
+"Prefer not to answer" = 0,
+"Male" = -1,
+"Female" = 1
+)
+Gender_converted <- revalue(x= temp_Gender, replace = Gender_converter)
+df$Gender_numeric <- as.integer(Gender_converted)
+rm(temp_Gender)
+rm(Gender_converter)
+rm(Gender_converted)
+```
+
+
+```{r Create Standardized Gender Variable}
+df$Gender_z <- scale(x = df$Gender_numeric)
+df <- subset(df, select = -Gender_numeric)
+```
+
+**Vitamin D Levels**
+
+We noticed some potential issues with the VitD_levels variable during
+the initial examination of the data. We will proceed with a slightly
+deeper analysis.
+
+```{r Summarize and Plot Histogram of VitD_levels}
+
+# Summarize and Plot Histogram of VitD_levels
+summary(df$VitD_levels)
+hist(df$VitD_levels)
+```
+
+```{r Univariate Analysis of VitD_levles}
+
+# Univariate Analysis of VitD_levles
+VitD_uni <- qplot(data = df, y= VitD_levels, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='VitD_levels') +
+geom_text(aes(label=ifelse(VitD_levels %in% boxplot.stats(VitD_levels)$out,
+as.character(VitD_levels), "")), hjust = 1.5)
+VitD_uni
+rm(VitD_uni)
+```
+
+A univariate analysis is not sufficient to understand the pattern in
+this data. We noticed from the simple histogram that there seem to be
+two separte clusters, so we will examine whether a bivariate analysis
+will shed light on the issue. We will begin with the other variable in
+the data frame associated with Vitamin D.
+
+```{r Bivariate Analysis of VitD_levels and VitD_supp}
+
+# Bivariate Analysis of VitD_levels and VitD_supp
+D_bivar <- qplot(data = df,
+        x = VitD_levels,
+        y = VitD_supp,
+        main = "Bivariate Analysis of VitD_levels and VitD_supp")
+D_bivar
+rm(D_bivar)
+```
+
+It would appear we have two separate groupings, so we will examine them
+each individually.
+
+```{r Six Sigma Analysis of VitD_levels Groupings}
+
+# Six Sigma Analysis of VitD_levels Groupings
+df2 <- subset(df, df$VitD_levels < 30)
+df3 <- subset(df, df$VitD_levels > 30)
+
+VitD2_uni <- qplot(data = df2, y= VitD_levels, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='VitD_levels') +
+geom_text(aes(label=ifelse(VitD_levels %in% boxplot.stats(VitD_levels)$out,
+as.character(VitD_levels), "")), hjust = 1.5)
+VitD2_uni
+rm(VitD2_uni)
+
+x = df2$VitD_levels
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Six Sigma Analysis of Lower VitD_levels Grouping")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+
+
+
+VitD3_uni <- qplot(data = df3, y= VitD_levels, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='VitD_levels') +
+geom_text(aes(label=ifelse(VitD_levels %in% boxplot.stats(VitD_levels)$out,
+as.character(VitD_levels), "")), hjust = 1.5)
+VitD3_uni
+rm(VitD3_uni)
+
+x = df3$VitD_levels
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Six Sigma Analysis of Upper VitD_levels Grouping")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs Test on VitD_levels Groupings}
+grubbs.test(df2$VitD_levels)
+grubbs.test(df3$VitD_levels)
+```
+
+Neither grouping has a Grubbs test result that indicates a seriously
+problematic issues with outliers.
+
+```{r Bivariate Analysis of VitD_levels and ReAdmis}
+
+# Bivariate Analysis of VitD_levels and ReAdmis
+D_bivar <- qplot(data = df2,
+        x = VitD_levels,
+        y = ReAdmis,
+        main = "Bivariate Analysis of Low VitD_levels and ReAdmis")
+D_bivar
+rm(D_bivar)
+
+
+D_bivar <- qplot(data = df3,
+        x = VitD_levels,
+        y = ReAdmis,
+        main = "Bivariate Analysis of High VitD_levels and ReAdmis")
+D_bivar
+rm(D_bivar)
+```
+
+It would appear that the two groupings each have a similar relationship
+to our response variable. We will standardize each grouping separately
+to more accurately reflect the relationship between the variables.
+
+```{r Create Standardized Variables VitD_levels}
+df2$VitD_levels_z <- scale(x = df2$VitD_levels) 
+df3$VitD_levels_z <- scale(x = df3$VitD_levels)
+
+df <- merge(df2, df3, all=TRUE)
+
+rm(df2)
+rm(df3)
+```
+
+**Doc Visits**
+
+```{r Summarize Doc_visits}
+summary(df$Doc_visits)
+```
+
+```{r Univariate Analysis of Doc_visits}
+
+DocV_uni <- qplot(data = df, y= Doc_visits, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Doc_visits') +
+geom_text(aes(label=ifelse(Doc_visits %in% boxplot.stats(Doc_visits)$out,
+as.character(Doc_visits), "")), hjust = 1.5)
+DocV_uni
+rm(DocV_uni)
+```
+
+```{r Six Sigma Analysis of Doc_visits}
+
+x = df$Doc_visits
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2)
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs Test on Doc_visits}
+grubbs.test(df$Doc_visits)
+```
+
+The Doc_visits variable does not show a significant issue with outliers.
+We will create a standardized variable for PCA purposes.
+
+```{r}
+df$Doc_visits_z <- scale(x = df$Doc_visits)
+```
+
+**Full Meals Eaten**
+
+```{r Summarize Full_meals_eaten}
+summary(df$Full_meals_eaten)
+```
+
+```{r Univariate Analysis on Full_meals_eaten}
+
+meals_uni <- qplot(data = df, y= Full_meals_eaten, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Full_meals_eaten') +
+geom_text(aes(label=ifelse(Full_meals_eaten %in% boxplot.stats(Full_meals_eaten)$out,
+as.character(Full_meals_eaten), "")), hjust = 1.5)
+meals_uni
+rm(meals_uni)
+```
+
+```{r Sig Sigma Analysis of Full_meals_eaten}
+
+x = df$Full_meals_eaten
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2)
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs Test on Full_meals_eaten}
+grubbs.test(df$Full_meals_eaten)
+```
+
+Each of our analyses suggest that the Full Meals Eaten field contains
+significant outliers on the high end.
+
+```{r Count of Full_meals_eaten equal to 7}
+sum(df$Full_meals_eaten == 7)
+```
+
+With only two values on the highest end, we will remove them.
+
+```{r Remove Full_meals_eaten equal to 7}
+x <- which(df$Full_meals_eaten == 7)
+df <- df[-c(x), ]
+grubbs.test(df$Full_meals_eaten)
+rm(x)
+```
+
+It would seem removing the highest values was not enough to bring the
+p-value to greater than 0.05. We will examine removing the next highest
+value.
+
+```{r Count of Full_meals_eaten equal to 6}
+sum(df$Full_meals_eaten == 6)
+```
+
+```{r Remove Full_meals_eaten equal to 6}
+x <- which(df$Full_meals_eaten == 6)
+df <- df[-c(x), ]
+grubbs.test(df$Full_meals_eaten)
+rm(x)
+```
+
+We removed 8 rows of data that contained problematic values. Now the
+p-value is above 0.05, and we may proceed.
+
+We will add a standardized Full Meals Eaten variable for PCA purposes.
+
+```{r Create Standardized Variable for Full Meals Eaten}
+
+df$Full_meals_eaten_z <- scale(x = df$Full_meals_eaten)
+
+```
+
+**Vitamin D Supplements**
+
+```{r Summarize VitD_supp Variable}
+summary(df$VitD_supp)
+```
+
+```{r Univariate Analysis of VitD_supp}
+
+VitDsup_uni <- qplot(data = df, y= VitD_supp, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='VitD_supp') +
+geom_text(aes(label=ifelse(VitD_supp %in% boxplot.stats(VitD_supp)$out,
+as.character(VitD_supp), "")), hjust = 1.5)
+VitDsup_uni
+rm(VitDsup_uni)
+```
+
+```{r Six Sigma Analysis of VitD_supp}
+
+x = df$VitD_supp
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2)
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+```{r Grubbs Test on VitD_supp}
+grubbs.test(df$VitD_supp)
+```
+
+Earlier we discovered a connection between Vitamin D levels and Vitamin
+D Supplements. However, it would seem that a value of 5 could be removed
+without obscuring the known pattern.
+
+```{r Bivariate Analysis of VitD_supp and VitD_levels}
+
+D_bivar <- qplot(data = df,
+        x = VitD_supp,
+        y = VitD_levels,
+        main = "Bivariate Analysis of VitD_supp and VitD_levels")
+D_bivar
+rm(D_bivar)
+```
+
+```{r}
+sum(df$VitD_supp == 5)
+```
+
+```{r Remove VitD_supp equal to 5}
+x <- which(df$VitD_supp == 5)
+df <- df[-c(x), ]
+grubbs.test(df$VitD_supp)
+rm(x)
+```
+
+We will examine the impact of removing the values of 4.
+
+```{r}
+sum(df$VitD_supp == 4)
+```
+
+```{r Remove VitD_supp equal to 4}
+x <- which(df$VitD_supp == 4)
+df <- df[-c(x), ]
+grubbs.test(df$VitD_supp)
+rm(x)
+```
+
+Without any significant outliers, we will now create a standardized
+variable for PCA purposes.
+
+```{r}
+df$VitD_supp_z <- scale(x = df$VitD_supp)
+```
+
+**Soft Drink**
+
+As a binary categorical, we will create a standardized variable for PCA
+purposes.
+
+```{r}
+df$Soft_drink_z <- scale(x = df$Soft_drink)
+```
+
+**Initial Admin** We will create a standardized Initial Admin variable
+and remove the Initial_admin_numeric variable; the purpose for that
+variable was to be an intermediary step for standardization.
+
+```{r Convert Initial Admission to Numeric}
+typeof(df$Initial_admin)
+
+temp_Initial_admin <- df$Initial_admin
+Initial_admin_converter <- c(
+"Elective Admission" = 0,
+"Observation Admission" = 1,
+"Emergency Admission" = 2
+)
+Initial_admin_converted <- revalue(x= temp_Initial_admin, replace = Initial_admin_converter)
+df$Initial_admin_numeric <- as.numeric(Initial_admin_converted)
+
+rm(temp_Initial_admin)
+rm(Initial_admin_converter)
+rm(Initial_admin_converted)
+unique(df$Initial_admin_numeric)
+typeof(df$Initial_admin_numeric)
+```
+
+```{r Create Standardized Initial Admin Variable}
+df$Initial_admin_z <- scale(x = df$Initial_admin_numeric)
+df <- subset (df, select = -Initial_admin_numeric)
+```
+
+**Complication Risk** We will create a standardized Complication Risk
+variable and remove the Complication_risk_numeric variable; the purpose
+for that variable was to be an intermediary step for standardization.
+
+```{r Create Complication_risk Numeric Variable}
+typeof(df$Complication_risk)
+
+temp_Complication_risk <- df$Complication_risk
+Complication_risk_converter <- c(
+"Low" = 1,
+"Medium" = 3,
+"High" = 5
+)
+Complication_risk_converted <- revalue(x= temp_Complication_risk, replace = Complication_risk_converter)
+
+df$Complication_risk_numeric <- as.numeric(Complication_risk_converted)
+
+rm(temp_Complication_risk)
+rm(Complication_risk_converter)
+rm(Complication_risk_converted)
+
+unique(df$Complication_risk_numeric)
+typeof(df$Complication_risk_numeric)
+
+```
+
+```{r Create Standardized Complication Risk Variable}
+df$Complication_risk_z <- scale(x = df$Complication_risk_numeric)
+df <- subset (df, select = -Complication_risk_numeric)
+```
+
+**Medical History** We will create a standardized medical history
+variables for PCA purposes.
+
+```{r Create Standardized Survey Response Variables}
+df$HighBlood_z <- scale(x = df$HighBlood)
+df$Stroke_z <- scale(x = df$Stroke)
+df$Overweight_z <- scale(x = df$Overweight)
+df$Arthritis_z <- scale(x = df$Arthritis)
+df$Diabetes_z <- scale(x = df$Diabetes)
+df$Hyperlipidemia_z <- scale(x = df$Hyperlipidemia)
+df$BackPain_z <- scale(x = df$BackPain)
+df$Anxiety_z <- scale(x = df$Anxiety)
+df$Allergic_rhinitis_z <- scale(x = df$Allergic_rhinitis)
+df$Reflux_esophagitis_z <- scale(x = df$Reflux_esophagitis)
+df$Asthma_z <- scale(x = df$Asthma)
+```
+
+**Services**
+
+```{r Calculate Scale for Numeric Services Variable}
+BloodWork.NumVal <- as.numeric(sum(df$Services == "Blood Work"))
+Intravenous.NumVal <- as.numeric(BloodWork.NumVal / sum(df$Services == "Intravenous"))
+CTScan.NumVal <- as.numeric(BloodWork.NumVal / sum(df$Services == "CT Scan"))
+MRI.NumVal <- as.numeric(BloodWork.NumVal / sum(df$Services == "MRI"))
+```
+
+```{r Create Numeric Services Variable}
+typeof(df$Services)
+unique(df$Services)
+typeof(df$Services)
+
+temp_Services <- as.character(df$Services)
+Services_converter <- c(
+"Blood Work" = 1,
+"Intravenous" = Intravenous.NumVal,
+"CT Scan" = CTScan.NumVal,
+"MRI" = MRI.NumVal
+)
+Services_converted <- revalue(x= temp_Services, replace = Services_converter)
+
+df$Services_numeric <- as.numeric(Services_converted)
+
+rm(BloodWork.NumVal)
+rm(Intravenous.NumVal)
+rm(CTScan.NumVal)
+rm(MRI.NumVal)
+rm(temp_Services)
+rm(Services_converter)
+rm(Services_converted)
+
+unique(df$Services_numeric)
+typeof(df$Services_numeric)
+```
+
+We will create a standardized Services variable and remove the
+Services_numeric variable; the purpose for that variable was to be an
+intermediary step for standardization.
+
+```{r Create Standardized Services Variable}
+df$Services_z <- scale(x = df$Services_numeric)
+df <- subset (df, select = -Services_numeric)
+```
+
+**Initial Days**
+
+```{r Summarize Initial_days}
+summary(df$Initial_days)
+```
+
+```{r Univariate Analysis of Initial_days}
+
+InitD_uni <- qplot(data = df, y= Initial_days, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Initial_days') +
+geom_text(aes(label=ifelse(Initial_days %in% boxplot.stats(Initial_days)$out,
+as.character(Initial_days), "")), hjust = 1.5)
+InitD_uni
+rm(InitD_uni)
+```
+
+```{r Grubbs Test on Initial_days}
+grubbs.test(df$Initial_days)
+```
+
+We do not see any evidence that the Initial_days column contains any
+significant outliers. We will create a standardized variable for PCA
+purposes.
+
+```{r Create Standardized Initial_days Variable}
+df$Initial_days_z <- scale(x = df$Initial_days)
+```
+
+**Total Charge**
+
+```{r Summarize and Plot TotalCharge}
+
+summary(df$TotalCharge)
+hist(df$TotalCharge)
+```
+
+```{r Univariate Analysis of TotalCharge}
+
+TotalC_uni <- qplot(data = df, y= TotalCharge, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='TotalCharge') +
+geom_text(aes(label=ifelse(TotalCharge %in% boxplot.stats(TotalCharge)$out,
+as.character(TotalCharge), "")), hjust = 1.5)
+TotalC_uni
+rm(TotalC_uni)
+```
+
+```{r Six Sigma Analysis of TotalCharge}
+
+x = df$TotalCharge
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2, main = "Six Sigma Total Charge Outlier Plot")
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+This data looks a suspiciously like two distinct data sets that we will
+need to separate if we want meaningful results from our analysis. We may
+be able to ascertain more if we continue a preliminary analysis.
+
+```{r Bivariate Analysis of TotalCharge and ReAdmis}
+
+TotRe_bi <- qplot(data = df,
+        x = TotalCharge,
+        y = ReAdmis, 
+        main = "TotalCharge vs Readmission")
+TotRe_bi
+rm(TotRe_bi)
+```
+
+```{r Bivariate Analysis of TotalCharge and Initial_days}
+
+ChargeDay_biv <- qplot(data = df,
+        x = TotalCharge,
+        y = Initial_days, 
+        main = "Total Charge vs. Initial Days")
+ChargeDay_biv
+rm(ChargeDay_biv)
+```
+
+TotalCharge seems to be of two distinct categories of data split just
+above 10,000 total cost. We will divide the rows based on that value,
+standardize the TotalCharge values, and then recombine them for closer
+analysis.
+
+```{r Divide Groupings of TotalCharge}
+df1 <- subset(df, df$TotalCharge <= 11000)
+df2 <- subset(df, df$TotalCharge >= 11001)
+```
+
+```{r Bivariate Analysis of TotalCharge Groupings with ReAdmis}
+
+df1_bi <- qplot(data = df1,
+        x = TotalCharge,
+        y = ReAdmis, 
+        main = "TotalCharge vs Readmission")
+df1_bi
+rm(df1_bi)
+
+
+df2_bi <- qplot(data = df2,
+        x = TotalCharge,
+        y = ReAdmis, 
+        main = "TotalCharge vs Readmission")
+df2_bi
+rm(df2_bi)
+```
+
+```{r Bivariate Analysis of TotalCharge Groupings with Initial Days}
+
+ChargeDay1_biv <- qplot(data = df1,
+        x = TotalCharge,
+        y = Initial_days, 
+        main = "Total Charge vs. Initial Days")
+ChargeDay1_biv
+rm(ChargeDay1_biv)
+
+ChargeDay2_biv <- qplot(data = df2,
+        x = TotalCharge,
+        y = Initial_days, 
+        main = "Total Charge vs. Initial Days")
+ChargeDay2_biv
+rm(ChargeDay2_biv)
+
+```
+
+It appears as though this division of data will provide the most
+analytically valuable results after standardization. We can create two
+intermediary vectors before merging them back (DeHan, 2019).
+
+```{r Create Standardize TotalCharge Grouping Variables}
+df1$TotalCharge_z <- scale(x = df1$TotalCharge)
+df2$TotalCharge_z <- scale(x = df2$TotalCharge)
+```
+
+```{r Add Combined Standardized TotalCharge Variable}
+df <- merge(df1, df2, all=TRUE)
+rm(df1)
+rm(df2)
+```
+
+**Additional Charges** We will analyze the Additional Charges column for
+potential outliers.
+
+```{r Summarize and Plot Additional Charges}
+
+summary(df$Additional_charges)
+hist(df$Additional_charges)
+```
+
+No issues seem to present themselves via the histogram, so we will
+proceed with a univariate analysis by creating a box plot.
+
+```{r Univariate Analysis of Additional_charges}
+
+AdCharge_uni <- qplot(data = df, y= Additional_charges, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Additional_charges') +
+geom_text(aes(label=ifelse(Additional_charges %in% boxplot.stats(Additional_charges)$out,
+as.character(Additional_charges), "")), hjust = 1.5)
+AdCharge_uni
+rm(AdCharge_uni)
+```
+
+There appear to be a few larger values that might present a problem, but
+we will continue our analysis.
+
+```{r Six Sigma Analysis of Additional_charges}
+
+x = df$Additional_charges
+t = 3
+m = mean(x, na.rm = F)
+s = sd(x, na.rm = F)
+b1 = m - s*t
+b2 = m + s*t
+y = ifelse(x >= b1 & x<= b2, 0, 1)
+
+plot(x, col=y+2)
+
+rm(b1)
+rm(b2)
+rm(m)
+rm(s)
+rm(t)
+rm(x)
+rm(y)
+```
+
+The Six Sigma analysis does not show a significant problem with the
+larger values. We will run a Grubbs test to be the final factor.
+
+```{r Grubbs Test on Additional_charges}
+grubbs.test(df$Additional_charges)
+```
+
+With a p-value of 1, this column does not seem to have a significant
+issue with outliers. The data will be left as-is despite having some
+values that are large. Those larger values may be key to understanding
+readmission tendencies.
+
+We will create a standardized value column for the Additional_charges
+variable for PCA purposes.
+
+```{r Create Standardized Additional_charges Variable}
+df$Additional_charges_z <- scale(x = df$Additional_charges)
+```
+
+**Survey Results** We will perform a univariate analysis on each of the
+survey results.
+
+```{r Univariate Analysis of Survey Responses}
+
+Timely_Admission_Survey_uni <- qplot(data = df, y= Timely_Admission_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Timely_Admission_Survey') +
+geom_text(aes(label=ifelse(Timely_Admission_Survey %in% boxplot.stats(Timely_Admission_Survey)$out,
+as.character(Timely_Admission_Survey), "")), hjust = 1.5)
+Timely_Admission_Survey_uni
+rm(Timely_Admission_Survey_uni)
+
+Timely_Treatment_Survey_uni <- qplot(data = df, y= Timely_Treatment_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Timely_Treatment_Survey') +
+geom_text(aes(label=ifelse(Timely_Treatment_Survey %in% boxplot.stats(Timely_Treatment_Survey)$out,
+as.character(Timely_Treatment_Survey), "")), hjust = 1.5)
+Timely_Treatment_Survey_uni
+rm(Timely_Treatment_Survey_uni)
+
+
+Timely_Visits_Survey_uni <- qplot(data = df, y= Timely_Visits_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Timely_Visits_Survey') +
+geom_text(aes(label=ifelse(Timely_Visits_Survey %in% boxplot.stats(Timely_Visits_Survey)$out,
+as.character(Timely_Visits_Survey), "")), hjust = 1.5)
+Timely_Visits_Survey_uni
+rm(Timely_Visits_Survey_uni)
+
+
+Reliability_Survey_uni <- qplot(data = df, y= Reliability_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Reliability_Survey') +
+geom_text(aes(label=ifelse(Reliability_Survey %in% boxplot.stats(Reliability_Survey)$out,
+as.character(Reliability_Survey), "")), hjust = 1.5)
+Reliability_Survey_uni
+rm(Reliability_Survey_uni)
+
+
+Options_Survey_uni <- qplot(data = df, y= Options_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Options_Survey') +
+geom_text(aes(label=ifelse(Options_Survey %in% boxplot.stats(Options_Survey)$out,
+as.character(Options_Survey), "")), hjust = 1.5)
+Options_Survey_uni
+rm(Options_Survey_uni)
+
+
+Treatment_Hours_Survey_uni <- qplot(data = df, y= Treatment_Hours_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Treatment_Hours_Survey') +
+geom_text(aes(label=ifelse(Treatment_Hours_Survey %in% boxplot.stats(Treatment_Hours_Survey)$out,
+as.character(Treatment_Hours_Survey), "")), hjust = 1.5)
+Treatment_Hours_Survey_uni
+rm(Treatment_Hours_Survey_uni)
+
+
+Courteous_Staff_Survey_uni <- qplot(data = df, y= Courteous_Staff_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Courteous_Staff_Survey') +
+geom_text(aes(label=ifelse(Courteous_Staff_Survey %in% boxplot.stats(Courteous_Staff_Survey)$out,
+as.character(Courteous_Staff_Survey), "")), hjust = 1.5)
+Courteous_Staff_Survey_uni
+rm(Courteous_Staff_Survey_uni)
+
+
+Active_Listening_Survey_uni <- qplot(data = df, y= Active_Listening_Survey, x=1,
+geom='boxplot', outlier.colour='#E38942',
+xlim=c(0,2), xlab=NULL, ylab=NULL,
+main='Active_Listening_Survey') +
+geom_text(aes(label=ifelse(Active_Listening_Survey %in% boxplot.stats(Active_Listening_Survey)$out,
+as.character(Active_Listening_Survey), "")), hjust = 1.5)
+Active_Listening_Survey_uni
+rm(Active_Listening_Survey_uni)
+```
+
+We will run a Grubbs Test on each of the survey results.
+
+```{r Grubbs Test on Survey Results}
+grubbs.test(df$Timely_Admission_Survey)
+grubbs.test(df$Timely_Treatment_Survey)
+grubbs.test(df$Timely_Visits_Survey)
+grubbs.test(df$Reliability_Survey)
+grubbs.test(df$Options_Survey)
+grubbs.test(df$Treatment_Hours_Survey)
+grubbs.test(df$Courteous_Staff_Survey)
+grubbs.test(df$Active_Listening_Survey)
+```
+
+No p-values show statistically significant outliers. No data will be
+removed. However, we will create standardized value columns for the
+survey responses.
+
+```{r create Standardized Variables for Survey Results}
+df$Timely_Admission_Survey_z <- scale(x = df$Timely_Admission_Survey)
+df$Timely_Treatment_Survey_Z <- scale(x = df$Timely_Treatment_Survey)
+df$Timely_Visits_Survey_z <- scale(x = df$Timely_Visits_Survey)
+df$Reliability_Survey_z <- scale(x = df$Reliability_Survey)
+df$Options_Survey_z <- scale(x = df$Options_Survey)
+df$Treatment_Hours_Survey_z <- scale(x = df$Treatment_Hours_Survey)
+df$Courteous_Staff_Survey_z <- scale(x = df$Courteous_Staff_Survey)
+df$Active_Listening_Survey_z <- scale(x = df$Active_Listening_Survey)
+```
+
+Over 98% of the original data observations were maintained in the
+cleaned data frame. The only variables outright removed provided no
+analytic value.
+
+***
+
+### Part III, D.5-7: Cleaned Data and Process Limitations
+
+5.  Provide a copy of the cleaned data set.
+
+6.  Summarize the limitations of the data-cleaning process.
+
+7.  Discuss how the limitations in part D6 affect the analysis of the
+    question or decision from part A.
+
+***
+
+```{r Export Clean Data Set}
+df <- df[,c(1,24,4:23,25:54,2:3,55:95)]
+df_cleaned <- df[,c(1:54)]
+df_z <- df[,c(55:95)]
+write.csv(df_cleaned,".\\medical_clean_data.csv", row.names = FALSE)
+```
+
+6.  Summarize the limitations of the data-cleaning process.
+
+In order to optimize the provided data set for PCA, we have imposed a
+numeric scale on some data that might have been best left as factor
+data. The scales we imposed can be explained and justified, but any
+human-created system can insert bias into the analysis based on the
+presuppositions that motivated the data transformation.
+
+In another setting, we might have liked to ask questions about the data
+when certain issues arose. For example, we seem to have identified two
+independent pricing structures. Instead of investigating that
+possibility in a direct way, we made certain inferences that we believe
+to be correct. A large amount of ambiguity could be removed from this
+process given access to the data owners.
+
+The result of this process added columns to the data set in order to
+avoid removing the original data. This could make interpreting the final
+result less straightforward. The cleaned data requires--because of the
+decisions we made--an additional dictionary file explaining how to
+interpret each new column. This is particularly true for the z-score
+columns which present information ideal for PCA, but these data are less
+meaningful at a glance.
+
+7.  Discuss how the limitations in part D6 affect the analysis of the
+    question or decision from part A.
+
+Because we need to determine which of the many possible factors
+contribute most to readmission rates, we are motivated to accept some
+level of potential bias by imposing a numeric scale to the
+character/categorical data.
+
+In order to allow the hospital administrators to understand the z-value
+data, it is best that we do not remove the original columns even if the
+end result appears more cluttered at-a-glance.
+
+***
+
+### Part III, E: Principal Component Analysis
+
+E.  Apply principal component analysis (PCA) to identify the significant
+    features of the data set by doing the following:
+
+1.  List the principal components in the data set.
+
+2.  Describe how you identified the principal components of the data
+    set.
+
+3.  Describe how the organization can benefit from the results of the
+    PCA
+
+***
+
+We will use a combination of course material and methods used by
+Kassambara (2017) to complete the PCA portion of this assignment.
+
+```{r Call libraries needed for PCA}
+library("FactoMineR")
+library("factoextra")
+library("corrplot")
+```
+
+```{r Perform PCA calculation}
+df.pca <- PCA(df_z, ncp = 15, graph = FALSE)
+print(df.pca)
+var <- get_pca_var(df.pca)
+df_pca_loading <- var$coord
+```
+
+We will extract the eigenvalue data from the PCA calculation in order to
+help us determine how many Principle Components this data set has.
+
+```{r}
+eig.val <- get_eigenvalue(df.pca)
+eig.val
+fviz_eig(df.pca, addlabels = TRUE, ylim = c(0, 8), ncp = 15)
+fviz_eig(df.pca, choice = "eigenvalue", addlabels = TRUE, ylim = c(0, 3.2), ncp = 15)
+```
+
+While not dramatic, the first five dimensions offer a proportionately larger share of the percentage of explained variance than each of the other dimensions individually. We could elect to focus on the first five dimensions, but I would like to retain a larger accounting of the data frame's variance. Keeping the first 10 dimensions will keep each dimension with an eigenvalue greater than one.
+
+```{r Limit PCA Calculation}
+df.pca <- PCA(df_z, ncp = 10, graph = FALSE)
+var <- get_pca_var(df.pca)
+df_pca_loading <- var$coord
+eig.val <- get_eigenvalue(df.pca)
+write.csv(df_pca_loading,".\\medical_pca_data.csv", row.names = TRUE)
+df_z <- df[,c(1,55:95)]
+write.csv(df_z,".\\medical_standardized_reduced_data.csv", row.names = FALSE)
+```
+
+```{r Print Variable Quality and Contribution Data}
+# Cos2: quality on the factor map
+var$cos2[,1:10]
+# Contributions to the principal components
+var$contrib[,1:10]
+```
+
+**Quality and Proportion of Variable Representation**
+
+We use cos^2^ to measure the quality of representation of the variables.
+We can plot out the cos^2^ of variables on all the dimensions using the
+corrplot package:
+
+```{r Quality and Proportion of Variable Representation}
+corrplot(var$cos2, is.corr=FALSE)
+corrplot(var$contrib, is.corr=FALSE) 
+```
+
+***
+
+#### List of Principle Components
+
+We will now list out the first 10 Principle Components and their primary variable contributions.
+
+**PC1 - Primary Contributing Variables**  
+
+1. Timely_Admission_Survey
+2. Timely_Treatment_Survey
+3. Treatment_Hours_Survey
+4. Timely_Visits_Survey
+5. Courteous_Staff_Survey
+6. Active_Listening_Survey
+```{r PC1 Variables}
+#Quality of variable representation in PC1
+fviz_cos2(df.pca, choice = "var", axes = 1)
+# Contributions of variables to PC1
+fviz_contrib(df.pca, choice = "var", axes = 1, top = 10)
+```
+
+
+
+**PC2 - Primary Contributing Variables**  
+
+1. Additional_charges
+2. TotalCharge
+3. Initial_days
+4. Age 
+5. HighBlood
+```{r PC2 Variables}
+#Quality of variable representation in PC2
+fviz_cos2(df.pca, choice = "var", axes = 2)
+# Contributions of variables to PC2
+fviz_contrib(df.pca, choice = "var", axes = 2, top = 10)
+```
+
+
+
+**PC3 - Primary Contributing Variables**
+1. Lng
+2. Timezone
+```{r PC3 Variables}
+#Quality of variable representation in PC3
+fviz_cos2(df.pca, choice = "var", axes = 3)
+# Contributions of variables to PC3
+fviz_contrib(df.pca, choice = "var", axes = 3, top = 10)
+```
+
+
+
+**PC4 - Primary Contributing Variables**  
+
+1. Initial Days
+2. Total Charge
+3. Additional Charges
+4. Age
+```{r PC4 Variables}
+#Quality of variable representation in PC4
+fviz_cos2(df.pca, choice = "var", axes = 4)
+# Contributions of variables to PC4
+fviz_contrib(df.pca, choice = "var", axes = 4, top = 10)
+```
+
+
+
+**PC5 - Primary Contributing Variables**  
+
+1. Options_Survey
+2. Reliability_Survey
+```{r PC5 Variables}
+#Quality of variable representation in PC5
+fviz_cos2(df.pca, choice = "var", axes = 5)
+# Contributions of variables to PC5
+fviz_contrib(df.pca, choice = "var", axes = 5, top = 10)
+```
+
+
+
+**PC6 - Primary Contributing Variables**  
+
+1. Population
+2. Lat
+```{r PC6 Variables}
+#Quality of variable representation in PC6
+fviz_cos2(df.pca, choice = "var", axes = 6)
+# Contributions of variables to PC6
+fviz_contrib(df.pca, choice = "var", axes = 6, top = 10)
+```
+
+
+
+**PC7 - Primary Contributing Variables**  
+
+1. Initial Admin
+2. VitD_levels
+3. Soft Drink
+4. Children
+5. Anxiety
+6. Full_meals_eaten
+7. Area
+
+```{r PC7 Variables}
+#Quality of variable representation in PC7
+fviz_cos2(df.pca, choice = "var", axes = 7)
+# Contributions of variables to PC7
+fviz_contrib(df.pca, choice = "var", axes = 7, top = 11)
+```
+
+
+
+**PC8 - Primary Contributing Variables**  
+
+1. Soft drink
+2. Diabetes
+3. VitD Levels
+4. Area
+5. Overweight
+6. Services
+7. Household Income
+```{r PC8 Variables}
+#Quality of variable representation in PC8
+fviz_cos2(df.pca, choice = "var", axes = 8)
+# Contributions of variables to PC8
+fviz_contrib(df.pca, choice = "var", axes = 8, top = 10)
+```
+
+
+
+**PC9 - Primary Contributing Variables**  
+
+1. VitD_supp
+2. Household_Income
+3. Diabetes
+4. Full Meals Eaten
+5. Area
+6. Arthritis
+7. Employment
+8. Anxiety
+```{r PC9 Variables}
+#Quality of variable representation in PC9
+fviz_cos2(df.pca, choice = "var", axes = 9)
+# Contributions of variables to PC9
+fviz_contrib(df.pca, choice = "var", axes = 9, top = 10)
+```
+
+
+
+**PC10 - Primary Contributing Variables**  
+
+1. BackPain
+2. Gender
+3. Children
+4. Complication Risk
+```{r PC10 Variables}
+#Quality of variable representation in PC10
+fviz_cos2(df.pca, choice = "var", axes = 10)
+# Contributions of variables to PC10
+fviz_contrib(df.pca, choice = "var", axes = 10, top = 10)
+```
+
+
+
+
+
+```{r Clean Environment}
+rm(var)
+rm(df_z)
+rm(eig.val)
+rm(df_cleaned)
+rm(df_pca_loading)
+rm(df.pca)
+rm(df)
+```
+
+***
+
+#### Benefits of PCA to Organization
+
+Hospitals collect large amounts of data on their patients, and it's
+likely that there are some commonalities among patients that are
+readmitted within one month of discharge. Due to the large number of
+variables, an analysis without any type of data reduction could be
+impractical due to time or computational limitations. We found via PCA
+that we can reduce the number of variables by 60% and still account for
+over half of the total variability of the data set.
+
+A deeper exploration of these principle components would likely reveal
+patterns which could be incorporated into patient screenings in order to
+take preemptive countermeasures to reduce readmission rates. Over 80% of
+hospitals do not yet use patient data in this way to avoid fines by the
+Centers of Medicare and Medicaid Services, but PCA makes that
+application simpler to incorporate into standard operating procedures.
+
+***
+
+## Part IV: Supporting Documents
+
+F.  Provide a Panopto recording that demonstrates the warning- and
+    error-free functionality of the code used to support the discovery
+    of anomalies and the data cleaning process and summarizes the
+    programming environment.
+
+G.  Reference the web sources used to acquire segments of third-party
+    code to support the application. Be sure the web sources are
+    reliable.
+
+H.  Acknowledge sources, using in-text citations and references, for
+    content that is quoted, paraphrased, or summarized.
+
+I.  Demonstrate professional communication in the content and
+    presentation of your submission.
+
+***
+
+```{=tex}
+\begin{center}
+References
+\end{center}
+```
+
+Burger, M. (2019). Querying and Converting Data Types in R [Mooc].
+Pluralsight.
+<https://app.pluralsight.com/library/courses/querying-converting-data-types-r/table-of-contents>
+
+Data to Fish. (2020, February 8). How to Export DataFrame to CSV in R.
+<https://datatofish.com/export-dataframe-to-csv-in-r/>
+
+DeHan, C. (2019). Manipulating Dataframes in R [Mooc]. Pluralsight.
+<https://app.pluralsight.com/library/courses/manipulating-dataframes-r/>
+
+Gallup, Inc. (2021, May 10). Work and Workplace \| Gallup Historical
+Trends. Gallup.Com.
+<https://news.gallup.com/poll/1720/work-work-place.aspx>
+
+Kabacoff, R. I. (2017). Quick-R: Bar Plots. Retrieved from
+StatMethods.net: <https://www.statmethods.net/graphs/bar.html>
+
+Kassambara, A. (2017). PCA - Principal Component Analysis Essentials.
+Statistical Tools For High-Throughput Data Analysis.
+<http://www.sthda.com/english/articles/31-principal-component-methods-in-r-practical-guide/112-pca-principal-component-analysis-essentials/>
+
+Larose, C. D., & Larose, D. T. (2019). Data Science Using Python and R.
+Hoboken, NJ: Wiley.
+
+Poulson, B. (2016). Data Science Foundations: Data Mining [Mooc].
+inLearning
+<https://www.linkedin.com/learning/data-science-foundations-data-mining/anomaly-detection-in-r?u=2045532>
+
+Saad, L. (2014, Aug 29). The "40-Hour" Workweek Is Actually Longer -- by
+Seven Hours. Gallup.com.
+<https://news.gallup.com/poll/175286/hour-workweek-actually-longer-seven-hours.aspx>
+
+Thorsen, S. (2021). Time Zones in the United States. Retrieved from Time
+and Date AS: <https://www.timeanddate.com/time/zone/usa/>
+
+Wickham, H., & Grolemund, G. (2017). R for Data Science. Sebastopol, CA:
+O'Reilly.
